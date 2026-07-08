@@ -74,7 +74,7 @@ php artisan key:generate
 | `KOLLUS_INKA_ACCESS_KEY` | inkaDRM(Pallycon) Access Key | DoveRunner 콘솔 |
 | `KOLLUS_INKA_SITE_KEY` | inkaDRM(Pallycon) Site Key (라이선스 룰 암호화용) | DoveRunner 콘솔 |
 | `KOLLUS_INKA_SITE_ID` | inkaDRM(Pallycon) Site ID | DoveRunner 콘솔 |
-| `KOLLUS_INKA_IV` | 라이선스 룰 AES-256-CBC 암호화 IV (기본값: `0123456789abcdef`) | - |
+| `KOLLUS_INKA_IV` | 라이선스 룰 AES-256-CBC 암호화 IV | - |
 | `KOLLUS_INKA_LICENSE_URL` | DoveRunner 라이선스 서버 URL | - |
 | `KOLLUS_INKA_CERTIFICATE_URL` | DoveRunner FairPlay 인증서 서버 URL | - |
 
