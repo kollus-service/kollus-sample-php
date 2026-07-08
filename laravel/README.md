@@ -68,8 +68,6 @@ php artisan key:generate
 | `KOLLUS_TOKEN_EXPIRE_SECONDS` | JWT 만료 시간(초, 기본값: 300) | - |
 | `KOLLUS_NEXT_EPISODE_MCKS` | 다음 회차 재생 샘플 미디어 콘텐츠 키 | - |
 
-> Kollus 대시보드 > 채널 설정 및 VOD 콘솔 > 서비스 계정에서 발급받은 값을 사용하세요.
-
 ### 3. 개발 서버 실행
 
 ```bash
@@ -84,7 +82,7 @@ npm run dev
 브라우저에서 아래 URL에 접근합니다 (`미디어콘텐츠키` 부분을 실제 미디어 콘텐츠 키로 교체):
 
 ```
-http://localhost:8000/kollus/player?media_content_key=미디어콘텐츠키
+http://localhost/kollus/player?media_content_key=미디어콘텐츠키
 ```
 
 플레이어가 정상적으로 로드되면 설정이 완료된 것입니다.
