@@ -50,4 +50,31 @@ return [
     */
     'next_episode_mck' => env('KOLLUS_NEXT_EPISODE_MCK', ''),
 
+    /*
+    |--------------------------------------------------------------------------
+    | 멀티 DRM 전용 Kollus 계정 키
+    |--------------------------------------------------------------------------
+    | 멀티 DRM(inkaDRM/Pallycon) 재생은 별도 Kollus 계정을 사용하므로
+    | 위 security_key/custom_key 대신 이 값을 사용한다.
+    */
+    'multidrm' => [
+        'security_key' => env('KOLLUS_MULTIDRM_SECURITY_KEY'),
+        'custom_key'   => env('KOLLUS_MULTIDRM_CUSTOM_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 멀티 DRM (inkaDRM / Pallycon) 설정
+    |--------------------------------------------------------------------------
+    | Pallycon 콘솔에서 발급받은 값을 입력하세요.
+    */
+    'inka' => [
+        'access_key'      => env('KOLLUS_INKA_ACCESS_KEY'),
+        'site_key'        => env('KOLLUS_INKA_SITE_KEY'),
+        'site_id'         => env('KOLLUS_INKA_SITE_ID'),
+        'iv'              => env('KOLLUS_INKA_IV', '0123456789abcdef'),
+        'license_url'     => env('KOLLUS_INKA_LICENSE_URL', 'https://license.pallycon.com/ri/licenseManager.do'),
+        'certificate_url' => env('KOLLUS_INKA_CERTIFICATE_URL', 'https://license.pallycon.com/ri/fpsKeyManager.do'),
+    ],
+
 ];
