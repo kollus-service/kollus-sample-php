@@ -71,12 +71,12 @@ php artisan key:generate
 | `KOLLUS_NEXT_EPISODE_MCKS` | 다음 회차 재생 샘플 미디어 콘텐츠 키 | - |
 | `KOLLUS_MULTIDRM_SECURITY_KEY` | 멀티 DRM 전용 JWT 서명 키 (일반 재생과 다른 별도 계정) | 멀티 DRM 서비스 계정 > 보안키 |
 | `KOLLUS_MULTIDRM_CUSTOM_KEY` | 멀티 DRM 전용 플레이어 URL 커스텀 키 | 멀티 DRM 서비스 계정 > 커스텀키 |
-| `KOLLUS_INKA_ACCESS_KEY` | inkaDRM(Pallycon) Access Key | Pallycon 콘솔 |
-| `KOLLUS_INKA_SITE_KEY` | inkaDRM(Pallycon) Site Key (라이선스 룰 암호화용) | Pallycon 콘솔 |
-| `KOLLUS_INKA_SITE_ID` | inkaDRM(Pallycon) Site ID | Pallycon 콘솔 |
+| `KOLLUS_INKA_ACCESS_KEY` | inkaDRM(Pallycon) Access Key | DoveRunner 콘솔 |
+| `KOLLUS_INKA_SITE_KEY` | inkaDRM(Pallycon) Site Key (라이선스 룰 암호화용) | DoveRunner 콘솔 |
+| `KOLLUS_INKA_SITE_ID` | inkaDRM(Pallycon) Site ID | DoveRunner 콘솔 |
 | `KOLLUS_INKA_IV` | 라이선스 룰 AES-256-CBC 암호화 IV (기본값: `0123456789abcdef`) | - |
-| `KOLLUS_INKA_LICENSE_URL` | Pallycon 라이선스 서버 URL | - |
-| `KOLLUS_INKA_CERTIFICATE_URL` | Pallycon FairPlay 인증서 서버 URL | - |
+| `KOLLUS_INKA_LICENSE_URL` | DoveRunner 라이선스 서버 URL | - |
+| `KOLLUS_INKA_CERTIFICATE_URL` | DoveRunner FairPlay 인증서 서버 URL | - |
 
 ### 3. 개발 서버 실행
 
