@@ -1,0 +1,6 @@
+/.idea
+/vendor
+/logs/*
+/config.yml
+/composer.lock
+/composer.phar

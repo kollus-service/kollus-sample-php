@@ -1,0 +1,9 @@
+kollus:
+  domain: kollus_domain
+  version: 0
+  language_key: korean
+  service_account:
+    key : service_account_key
+    api_access_token: api_access_token
+    custom_key: custom_key
+    security_key: security_key
