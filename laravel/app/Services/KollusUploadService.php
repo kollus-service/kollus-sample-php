@@ -1,4 +1,8 @@
 <?php
+/**
+ * Kollus Upload API를 호출해 일회용 업로드 URL을 발급하는 서비스.
+ * 일반/패스스루 엔드포인트의 서로 다른 응답 포맷을 공통 구조로 정규화한다.
+ */
 
 namespace App\Services;
 
@@ -11,18 +15,21 @@ class KollusUploadService
     private const CREATE_URL_ENDPOINT = 'https://c-api-kr.kollus.com/api/upload/create-url';
     private const CREATE_URL_ENDPOINT_PASSTHROUGH = 'https://upload.kr.kollus.com/api/v1/create_url';
 
-    /** 업로드 URL 기본 유효 시간 (초) */
-    private const DEFAULT_EXPIRE_TIME = 600;
+    /** 업로드 URL 기본 유효 시간 (초) — 컨트롤러 기본값/뷰 초기값으로도 사용 */
+    public const DEFAULT_EXPIRE_TIME = 600;
 
-    /** 업로드 URL 최대 유효 시간 (초) */
-    private const MAX_EXPIRE_TIME = 21600;
+    /** 업로드 URL 최소 유효 시간 (초) — 컨트롤러 검증 규칙(min)에서 사용 */
+    public const MIN_EXPIRE_TIME = 60;
+
+    /** 업로드 URL 최대 유효 시간 (초) — 컨트롤러 검증 규칙(max) 및 서비스 내부 상한 보정에 사용 */
+    public const MAX_EXPIRE_TIME = 21600;
 
     /**
      * Kollus API를 호출하여 일회용 업로드 URL을 발급받는다.
      *
      * @param string      $title         콘텐츠 제목 (미지정 시 파일명 사용)
      * @param string|null $categoryKey   저장할 카테고리 키 (미지정 시 기본 카테고리)
-     * @param int         $expireTime    URL 유효 시간 (초, 최대 21600)
+     * @param int         $expireTime    URL 유효 시간 (초, MAX_EXPIRE_TIME 초과 시 상한으로 보정)
      * @param int         $isAudioUpload 오디오 파일 여부 (0: 비디오, 1: 오디오)
      * @param int         $isPassthrough 패스스루 업로드 여부 (0: 일반, 1: 패스스루)
      * @param string|null $profileKey    인코딩 프로파일 키 (패스스루 시 필수)
@@ -38,6 +45,7 @@ class KollusUploadService
         int $isPassthrough = 0,
         ?string $profileKey = null,
     ): array {
+        // 하한 1은 "0 이하 값 방지"용 최소 양수, 상한은 Kollus API 허용 최대치로 보정
         $expireTime = min(max($expireTime, 1), self::MAX_EXPIRE_TIME);
 
         $body = array_filter([
@@ -52,7 +60,8 @@ class KollusUploadService
 
         $http = Http::withQueryParameters(['access_token' => config('kollus.access_token')]);
 
-        // 패스스루 엔드포인트는 form-urlencoded, 일반 엔드포인트는 JSON
+        // [Kollus API 호출] 업로드 URL 발급 — access_token은 쿼리 파라미터로 전달.
+        // 패스스루 엔드포인트(upload.kr.kollus.com)는 form-urlencoded, 일반 엔드포인트(c-api-kr.kollus.com)는 JSON 바디를 요구한다.
         $response = $isPassthrough === 1
             ? $http->asForm()->post(self::CREATE_URL_ENDPOINT_PASSTHROUGH, $body)
             : $http->post(self::CREATE_URL_ENDPOINT, $body);

@@ -1,4 +1,8 @@
 <?php
+/**
+ * Kollus 샘플 라우트 정의. 플레이어/멀티 DRM 플레이어 페이지, 업로드 페이지·URL 발급,
+ * 재생·DRM·다음 회차·LMS 콜백 엔드포인트를 등록한다.
+ */
 
 use App\Http\Controllers\KollusDrmCallbackController;
 use App\Http\Controllers\KollusLmsCallbackController;

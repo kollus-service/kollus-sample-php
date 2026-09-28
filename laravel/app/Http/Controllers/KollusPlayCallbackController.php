@@ -1,4 +1,7 @@
 <?php
+/**
+ * POST /kollus/play-callback — Kollus 재생 콜백(kind 1/3)을 수신해 JWT 응답(text/plain + X-KOLLUS-USERKEY)을 반환하는 컨트롤러.
+ */
 
 namespace App\Http\Controllers;
 
@@ -16,9 +19,16 @@ class KollusPlayCallbackController extends Controller
     private const DENY_MESSAGE =
         "해당 ID는 강의 공유, 양도, 불법거래 등 \n부정사용 행위 사유로 수강정지 조치되었습니다.";
 
-    public function __construct(
-        private readonly KollusPlayCallbackService $callbackService,
-    ) {}
+    /** 재생 콜백 응답(JWT) 조립 서비스 */
+    private readonly KollusPlayCallbackService $_callbackService;
+
+    /**
+     * @param KollusPlayCallbackService $callbackService 재생 콜백 응답(JWT) 조립 서비스
+     */
+    public function __construct(KollusPlayCallbackService $callbackService)
+    {
+        $this->_callbackService = $callbackService;
+    }
 
     /**
      * Kollus 플레이어로부터 콜백을 수신하고 JWT 응답을 반환한다.
@@ -27,6 +37,11 @@ class KollusPlayCallbackController extends Controller
      *   - Content-Type : text/plain; charset=utf-8
      *   - X-KOLLUS-USERKEY : {CUSTOM_KEY}  (반드시 포함)
      *   - Body : JWT 인코딩된 JSON 응답
+     *
+     * @param KollusPlayCallbackRequest $request kind / client_user_id / player_id / media_content_key 등이 검증된 재생 콜백 요청
+     * @return Response text/plain 본문에 JWT를 담은 응답
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException JWT 응답 생성 실패 시 500 (abort)
      */
     public function handle(KollusPlayCallbackRequest $request): Response
     {
@@ -36,14 +51,14 @@ class KollusPlayCallbackController extends Controller
         $isAllowed = true;
 
         try {
-            $jwt = $this->callbackService->buildResponse(
+            $jwt = $this->_callbackService->buildResponse(
                 kind: $kind,
                 isAllowed: $isAllowed,
                 denyMessage: $isAllowed ? null : self::DENY_MESSAGE,
             );
         } catch (RuntimeException $e) {
             // JWT 생성 실패는 서버 설정 오류이므로 500 반환
-            abort(500, 'Kollus 콜백 응답 생성에 실패했습니다: ' . $e->getMessage());
+            abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Kollus 콜백 응답 생성에 실패했습니다: ' . $e->getMessage());
         }
 
         return response($jwt, Response::HTTP_OK)

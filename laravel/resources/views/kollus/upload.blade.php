@@ -1,3 +1,4 @@
+{{-- Kollus 콘텐츠 업로드 페이지. 서버(create-url)에서 일회용 업로드 URL을 발급받은 뒤 브라우저가 Kollus 업로드 서버로 파일을 직접 전송(XHR, 진행률 표시)한다. --}}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -141,7 +142,10 @@
 
         <div class="field">
             <label for="expire-time">업로드 URL 유효 시간 (초)</label>
-            <input type="number" id="expire-time" value="600" min="60" max="21600">
+            <input type="number" id="expire-time"
+                   value="{{ \App\Services\KollusUploadService::DEFAULT_EXPIRE_TIME }}"
+                   min="{{ \App\Services\KollusUploadService::MIN_EXPIRE_TIME }}"
+                   max="{{ \App\Services\KollusUploadService::MAX_EXPIRE_TIME }}">
         </div>
 
         <div class="field">
@@ -175,101 +179,304 @@
 (function () {
     'use strict';
 
+    /** Laravel CSRF 토큰 (create-url AJAX 요청 헤더에 사용) */
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+    /** 업로드 URL 발급 엔드포인트 (POST /kollus/upload/create-url) */
     const CREATE_URL_ENDPOINT = '{{ route("kollus.upload.create-url") }}';
+    /** 용량 단위 환산 기준 (1 KB = 1024 B) */
+    const BYTES_PER_UNIT = 1024;
+    /** 진행률 최대값 (%) */
+    const PERCENT_MAX = 100;
+    /** HTTP 200 OK — Kollus 업로드 서버 응답 상태 판단용 */
+    const HTTP_OK = 200;
 
-    /* --- 패스스루 토글 --- */
+    /** 진행 중인 업로드의 파일 키 — XHR load 핸들러가 완료 메시지에 표시 */
+    let pendingUploadFileKey = null;
+
+    /* --- DOM 참조 --- */
     const passthroughCheckbox = document.getElementById('is-passthrough');
-    const fieldTitle           = document.getElementById('field-title');
-    const fieldProfileKey      = document.getElementById('field-profile-key');
+    const fieldTitle          = document.getElementById('field-title');
+    const fieldProfileKey     = document.getElementById('field-profile-key');
+    const titleInput          = document.getElementById('title');
+    const profileKeyInput     = document.getElementById('profile-key');
+    const categoryKeyInput    = document.getElementById('category-key');
+    const expireTimeInput     = document.getElementById('expire-time');
+    const form                = document.getElementById('upload-form');
+    const fileArea            = document.getElementById('file-area');
+    const fileInput           = document.getElementById('file-input');
+    const fileNameEl          = document.getElementById('file-name');
+    const submitBtn           = document.getElementById('submit-btn');
+    const progressSec         = document.getElementById('progress-section');
+    const progressBar         = document.getElementById('progress-bar');
+    const progressPct         = document.getElementById('progress-pct');
+    const progressSts         = document.getElementById('progress-status');
+    const statusMsg           = document.getElementById('status-msg');
 
-    passthroughCheckbox.addEventListener('change', () => {
-        const checked = passthroughCheckbox.checked;
-        fieldTitle.style.display      = checked ? 'none' : '';
-        fieldProfileKey.style.display = checked ? '' : 'none';
-        if (!checked) {
-            document.getElementById('profile-key').value = '';
-        }
-    });
+    /* --- 유틸리티 --- */
 
-    const form        = document.getElementById('upload-form');
-    const fileArea    = document.getElementById('file-area');
-    const fileInput   = document.getElementById('file-input');
-    const fileNameEl  = document.getElementById('file-name');
-    const submitBtn   = document.getElementById('submit-btn');
-    const progressSec = document.getElementById('progress-section');
-    const progressBar = document.getElementById('progress-bar');
-    const progressPct = document.getElementById('progress-pct');
-    const progressSts = document.getElementById('progress-status');
-    const statusMsg   = document.getElementById('status-msg');
-
-    /* --- 파일 선택 UI --- */
-    fileArea.addEventListener('click', () => fileInput.click());
-
-    fileArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileArea.classList.add('drag-over');
-    });
-    fileArea.addEventListener('dragleave', () => fileArea.classList.remove('drag-over'));
-    fileArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileArea.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file) setFile(file);
-    });
-
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files[0]) setFile(fileInput.files[0]);
-    });
-
-    function setFile(file) {
-        // DataTransfer로 input에 파일 설정 (drag-and-drop 시 input 동기화)
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput.files = dt.files;
-
-        fileNameEl.textContent = `${file.name} (${formatBytes(file.size)})`;
-        fileNameEl.style.display = 'block';
-    }
-
+    /**
+     * 바이트 수를 B/KB/MB/GB 단위 문자열로 변환한다.
+     * @param {number} bytes 바이트 수
+     * @returns {string} 사람이 읽기 쉬운 용량 문자열 (예: "12.3 MB")
+     */
     function formatBytes(bytes) {
-        if (bytes < 1024)        return bytes + ' B';
-        if (bytes < 1024 ** 2)   return (bytes / 1024).toFixed(1) + ' KB';
-        if (bytes < 1024 ** 3)   return (bytes / 1024 ** 2).toFixed(1) + ' MB';
-        return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+        if (bytes < BYTES_PER_UNIT)      return bytes + ' B';
+        if (bytes < BYTES_PER_UNIT ** 2) return (bytes / BYTES_PER_UNIT).toFixed(1) + ' KB';
+        if (bytes < BYTES_PER_UNIT ** 3) return (bytes / BYTES_PER_UNIT ** 2).toFixed(1) + ' MB';
+        return (bytes / BYTES_PER_UNIT ** 3).toFixed(2) + ' GB';
     }
 
-    /* --- 상태 메시지 --- */
+    /**
+     * 상태 메시지 영역에 메시지를 표시한다.
+     * @param {string} msg 표시할 메시지
+     * @param {'success'|'error'|'info'} type 메시지 종류 (동일 이름의 CSS 클래스 적용)
+     * @returns {void}
+     */
     function showStatus(msg, type) {
-        statusMsg.textContent = msg;
-        statusMsg.className   = type;
+        statusMsg.textContent   = msg;
+        statusMsg.className     = type;
         statusMsg.style.display = 'block';
     }
 
-    /* --- 진행률 업데이트 --- */
+    /**
+     * 진행률 바와 퍼센트 텍스트를 갱신한다.
+     * @param {number} pct 진행률 (0~PERCENT_MAX, 범위 밖 값은 경계값으로 보정)
+     * @param {string} [statusText] 진행 상태 문구 (생략 시 기존 문구 유지)
+     * @returns {void}
+     */
     function setProgress(pct, statusText) {
-        const clamped = Math.min(Math.max(pct, 0), 100);
+        const clamped = Math.min(Math.max(pct, 0), PERCENT_MAX);
         progressBar.style.width = clamped + '%';
         progressPct.textContent = clamped + '%';
         if (statusText) progressSts.textContent = statusText;
     }
 
-    /* --- 폼 제출 --- */
-    form.addEventListener('submit', async (e) => {
+    /**
+     * 선택된 파일을 file input에 동기화하고 파일명/용량을 표시한다.
+     * @param {File} file 클릭 선택 또는 드롭된 파일
+     * @returns {void}
+     */
+    function setFile(file) {
+        // 드래그앤드롭으로 받은 파일은 input.files에 직접 대입할 수 없으므로 DataTransfer로 동기화
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+
+        fileNameEl.textContent   = `${file.name} (${formatBytes(file.size)})`;
+        fileNameEl.style.display = 'block';
+    }
+
+    /**
+     * fetch 응답 본문을 JSON으로 안전하게 파싱한다.
+     * @param {Response} res fetch 응답
+     * @returns {Promise<Object>} 파싱된 JSON 객체. 파싱 불가 시 빈 객체
+     */
+    async function parseJsonSafely(res) {
+        try {
+            return await res.json();
+        } catch {
+            // 오류 응답이 JSON이 아닐 수 있음(예: 프레임워크 HTML 에러 페이지) —
+            // 빈 객체를 돌려 호출부가 HTTP 상태 코드 기반 메시지로 대체하도록 한다
+            return {};
+        }
+    }
+
+    /**
+     * 서버(create-url)에 일회용 업로드 URL 발급을 요청한다.
+     * @param {Object} params create-url 요청 파라미터 (title, file_name, category_key, expire_time, is_passthrough, profile_key)
+     * @returns {Promise<Object>} { upload_url, progress_url, upload_file_key, expired_at }
+     * @throws {Error} HTTP 오류 시 서버가 준 error 메시지 또는 상태 코드를 담은 Error
+     */
+    async function requestUploadUrl(params) {
+        const res = await fetch(CREATE_URL_ENDPOINT, {
+            method:  'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept':       'application/json',
+            },
+            body: JSON.stringify(params),
+        });
+
+        if (!res.ok) {
+            const err = await parseJsonSafely(res);
+            throw new Error(err.error || `서버 오류 (HTTP ${res.status})`);
+        }
+
+        return res.json();
+    }
+
+    /**
+     * 발급된 업로드 URL로 파일을 전송한다.
+     * 업로드 진행률 이벤트가 필요하므로 fetch 대신 XMLHttpRequest를 사용한다.
+     * @param {string} uploadUrl Kollus 일회용 업로드 URL
+     * @param {File} file 전송할 파일
+     * @param {string} uploadFileKey 완료 메시지에 표시할 업로드 파일 키
+     * @returns {void}
+     */
+    function uploadFile(uploadUrl, file, uploadFileKey) {
+        const formData = new FormData();
+        formData.append('upload-file',       file);           // Kollus 규격: 파일 필드명 고정
+        formData.append('accept',            'application/json');
+        formData.append('disable_alert',     '1');
+        formData.append('redirection_scope', 'no');
+
+        pendingUploadFileKey = uploadFileKey;
+
+        // [Kollus 업로드 서버 호출] 발급받은 upload_url로 브라우저가 파일을 직접 전송
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', handleUploadProgress);
+        xhr.addEventListener('load', handleUploadLoad);
+        xhr.addEventListener('error', handleUploadError);
+        xhr.addEventListener('abort', handleUploadAbort);
+        xhr.open('POST', uploadUrl);
+        xhr.send(formData);
+    }
+
+    /* --- 이벤트 핸들러 --- */
+
+    /**
+     * 패스스루 체크박스 토글: 제목 필드를 숨기고 인코딩 프로파일 키 필드를 노출한다 (해제 시 반대).
+     * @returns {void}
+     */
+    function handlePassthroughToggle() {
+        const checked = passthroughCheckbox.checked;
+        fieldTitle.style.display      = checked ? 'none' : '';
+        fieldProfileKey.style.display = checked ? '' : 'none';
+        if (!checked) {
+            profileKeyInput.value = '';
+        }
+    }
+
+    /**
+     * 파일 영역 클릭: 숨겨진 file input의 파일 선택 대화상자를 연다.
+     * @returns {void}
+     */
+    function handleFileAreaClick() {
+        fileInput.click();
+    }
+
+    /**
+     * 파일 드래그 진입: 브라우저 기본 동작(파일 열기)을 막고 강조 스타일을 적용한다.
+     * @param {DragEvent} e dragover 이벤트
+     * @returns {void}
+     */
+    function handleDragOver(e) {
+        e.preventDefault();
+        fileArea.classList.add('drag-over');
+    }
+
+    /**
+     * 파일 드래그 이탈: 강조 스타일을 제거한다.
+     * @returns {void}
+     */
+    function handleDragLeave() {
+        fileArea.classList.remove('drag-over');
+    }
+
+    /**
+     * 파일 드롭: 첫 번째 파일을 선택 파일로 설정한다.
+     * @param {DragEvent} e drop 이벤트
+     * @returns {void}
+     */
+    function handleDrop(e) {
+        e.preventDefault();
+        fileArea.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) setFile(file);
+    }
+
+    /**
+     * file input 변경: 선택된 파일명/용량을 표시한다.
+     * @returns {void}
+     */
+    function handleFileChange() {
+        if (fileInput.files[0]) setFile(fileInput.files[0]);
+    }
+
+    /**
+     * XHR 업로드 진행률 이벤트: 진행률 바와 전송량 문구를 갱신한다.
+     * @param {ProgressEvent} e upload progress 이벤트
+     * @returns {void}
+     */
+    function handleUploadProgress(e) {
+        if (!e.lengthComputable) return;
+        const pct = Math.round((e.loaded / e.total) * PERCENT_MAX);
+        setProgress(pct, `파일 전송 중... (${formatBytes(e.loaded)} / ${formatBytes(e.total)})`);
+    }
+
+    /**
+     * XHR 완료: Kollus 응답(JSON result 또는 HTTP 상태)으로 성공/실패를 판단해 표시한다.
+     * @param {ProgressEvent} e load 이벤트 (e.target이 완료된 XMLHttpRequest)
+     * @returns {void}
+     */
+    function handleUploadLoad(e) {
+        const xhr = e.target;
+        const uploadFileKey = pendingUploadFileKey;
+        submitBtn.disabled = false;
+        setProgress(PERCENT_MAX, '완료');
+
+        let result = null;
+        try {
+            result = JSON.parse(xhr.responseText);
+        } catch {
+            // Kollus 업로드 서버 응답이 JSON이 아닐 수 있음(리다이렉트 HTML 등) — 이 경우 HTTP 상태 코드만으로 판단
+        }
+
+        if ((result && result.result === 'S') || xhr.status === HTTP_OK) {
+            showStatus('업로드가 완료되었습니다. 파일 키: ' + uploadFileKey, 'success');
+            return;
+        }
+
+        const reason = result ? (result.message || '알 수 없는 오류') : 'HTTP ' + xhr.status;
+        showStatus('업로드 실패: ' + reason, 'error');
+    }
+
+    /**
+     * XHR 네트워크 오류: 오류 메시지를 표시하고 재시도할 수 있도록 버튼을 복구한다.
+     * @returns {void}
+     */
+    function handleUploadError() {
+        submitBtn.disabled = false;
+        // CORS 오류 시 직접 업로드가 차단될 수 있음 — 서버 프록시 방식 고려 필요
+        showStatus('네트워크 오류 또는 CORS 정책으로 업로드에 실패했습니다.', 'error');
+    }
+
+    /**
+     * XHR 취소: 안내 메시지를 표시하고 버튼을 복구한다.
+     * @returns {void}
+     */
+    function handleUploadAbort() {
+        submitBtn.disabled = false;
+        showStatus('업로드가 취소되었습니다.', 'info');
+    }
+
+    /**
+     * 폼 제출: 입력 검증 → 서버에서 업로드 URL 발급 → Kollus 업로드 서버로 파일 직접 전송.
+     * @param {SubmitEvent} e submit 이벤트
+     * @returns {Promise<void>}
+     */
+    async function handleSubmit(e) {
         e.preventDefault();
 
         const isPassthrough = passthroughCheckbox.checked;
-        const title         = document.getElementById('title').value.trim();
-        const profileKey    = document.getElementById('profile-key').value.trim();
-        const categoryKey   = document.getElementById('category-key').value.trim();
-        const expireTime    = parseInt(document.getElementById('expire-time').value, 10);
+        const title         = titleInput.value.trim();
+        const profileKey    = profileKeyInput.value.trim();
+        const categoryKey   = categoryKeyInput.value.trim();
+        const expireTime    = parseInt(expireTimeInput.value, 10);
         const file          = fileInput.files[0];
 
-        if (!file) return showStatus('파일을 선택해 주세요.', 'error');
-        if (isPassthrough && !profileKey) return showStatus('인코딩 프로파일 키를 입력해 주세요.', 'error');
+        if (!file) {
+            showStatus('파일을 선택해 주세요.', 'error');
+            return;
+        }
+        if (isPassthrough && !profileKey) {
+            showStatus('인코딩 프로파일 키를 입력해 주세요.', 'error');
+            return;
+        }
 
         // UI 초기화
-        statusMsg.style.display  = 'none';
+        statusMsg.style.display   = 'none';
         progressSec.style.display = 'block';
         setProgress(0, '업로드 URL 발급 중...');
         submitBtn.disabled = true;
@@ -277,30 +484,17 @@
         /* 1단계: 서버에서 업로드 URL 발급 */
         let uploadData;
         try {
-            const res = await fetch(CREATE_URL_ENDPOINT, {
-                method:  'POST',
-                headers: {
-                    'Content-Type':  'application/json',
-                    'X-CSRF-TOKEN':  CSRF_TOKEN,
-                    'Accept':        'application/json',
-                },
-                body: JSON.stringify({
-                    title:          isPassthrough ? null : (title || null),
-                    file_name:      file.name,
-                    category_key:   categoryKey || null,
-                    expire_time:    expireTime,
-                    is_passthrough: isPassthrough ? 1 : 0,
-                    profile_key:    isPassthrough ? profileKey : null,
-                }),
+            uploadData = await requestUploadUrl({
+                title:          isPassthrough ? null : (title || null),
+                file_name:      file.name,
+                category_key:   categoryKey || null,
+                expire_time:    expireTime,
+                is_passthrough: isPassthrough ? 1 : 0,
+                profile_key:    isPassthrough ? profileKey : null,
             });
-
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || `서버 오류 (HTTP ${res.status})`);
-            }
-
-            uploadData = await res.json();
         } catch (err) {
+            // 네트워크 오류 또는 서버의 422(입력 오류)/503(Kollus API 오류) 응답 —
+            // 사유를 보여주고 재시도할 수 있도록 버튼을 복구한 뒤 중단
             showStatus('업로드 URL 발급 실패: ' + err.message, 'error');
             submitBtn.disabled = false;
             return;
@@ -308,57 +502,17 @@
 
         /* 2단계: Kollus 업로드 서버로 파일 직접 전송 */
         setProgress(0, '파일 전송 중...');
+        uploadFile(uploadData.upload_url, file, uploadData.upload_file_key);
+    }
 
-        const formData = new FormData();
-        formData.append('upload-file',       file);           // Kollus 규격: 파일 필드명 고정
-        formData.append('accept',            'application/json');
-        formData.append('disable_alert',     '1');
-        formData.append('redirection_scope', 'no');
-
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.addEventListener('progress', (e) => {
-            if (!e.lengthComputable) return;
-            const pct = Math.round((e.loaded / e.total) * 100);
-            setProgress(pct, `파일 전송 중... (${formatBytes(e.loaded)} / ${formatBytes(e.total)})`);
-        });
-
-        xhr.addEventListener('load', () => {
-            submitBtn.disabled = false;
-            setProgress(100, '완료');
-
-            // 응답이 JSON인 경우 결과 확인
-            try {
-                const result = JSON.parse(xhr.responseText);
-                if (result.result === 'S' || xhr.status === 200) {
-                    showStatus('업로드가 완료되었습니다. 파일 키: ' + uploadData.upload_file_key, 'success');
-                } else {
-                    showStatus('업로드 실패: ' + (result.message || '알 수 없는 오류'), 'error');
-                }
-            } catch {
-                // JSON 파싱 실패 시 HTTP 상태로 판단
-                if (xhr.status === 200) {
-                    showStatus('업로드가 완료되었습니다. 파일 키: ' + uploadData.upload_file_key, 'success');
-                } else {
-                    showStatus('업로드 중 오류가 발생했습니다 (HTTP ' + xhr.status + ')', 'error');
-                }
-            }
-        });
-
-        xhr.addEventListener('error', () => {
-            submitBtn.disabled = false;
-            // CORS 오류 시 직접 업로드가 차단될 수 있음 — 서버 프록시 방식 고려 필요
-            showStatus('네트워크 오류 또는 CORS 정책으로 업로드에 실패했습니다.', 'error');
-        });
-
-        xhr.addEventListener('abort', () => {
-            submitBtn.disabled = false;
-            showStatus('업로드가 취소되었습니다.', 'info');
-        });
-
-        xhr.open('POST', uploadData.upload_url);
-        xhr.send(formData);
-    });
+    /* --- 이벤트 바인딩 --- */
+    passthroughCheckbox.addEventListener('change', handlePassthroughToggle);
+    fileArea.addEventListener('click', handleFileAreaClick);
+    fileArea.addEventListener('dragover', handleDragOver);
+    fileArea.addEventListener('dragleave', handleDragLeave);
+    fileArea.addEventListener('drop', handleDrop);
+    fileInput.addEventListener('change', handleFileChange);
+    form.addEventListener('submit', handleSubmit);
 }());
 </script>
 </body>

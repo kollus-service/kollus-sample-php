@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(KollusNextEpisodeCallbackService::class, function ($app) {
             return new KollusNextEpisodeCallbackService(
                 jwtService: $app->make(KollusJwtService::class),
-                nextEpisodeMck: config('kollus.next_episode_mck'),
+                nextEpisodeMcks: config('kollus.next_episode_mcks'),
             );
         });
 

@@ -1,3 +1,4 @@
+{{-- Kollus 플레이어 iframe 뷰. 컨트롤러가 생성한 JWT 서명 플레이어 URL($playerUrl)을 iframe src로 렌더링한다. --}}
 <!DOCTYPE html>
 <html lang="ko">
 <head>

@@ -1,8 +1,12 @@
 <?php
+/**
+ * Kollus 다음 회차 연속 재생 콜백(next-episode-callback) 컨트롤러 — 다음 회차 SI 링크를 JSON으로 응답한다.
+ */
 
 namespace App\Controllers\Kollus;
 
 use App\Controllers\BaseController;
+use CodeIgniter\HTTP\ResponseInterface;
 use RuntimeException;
 
 class NextEpisodeCallbackController extends BaseController
@@ -13,6 +17,8 @@ class NextEpisodeCallbackController extends BaseController
      * 응답 규격 (Kollus 문서 기준):
      *   - plain JSON { result, next_url }
      *   - next_url은 반드시 SI 링크(/si) 형태여야 함
+     *
+     * @return ResponseInterface 다음 회차가 있으면 { result: 1, next_url }, 없거나 생성 실패 시 { result: 0 }, 검증 실패 422
      */
     public function handle()
     {
@@ -20,7 +26,9 @@ class NextEpisodeCallbackController extends BaseController
             'mck' => 'required|string',
             'id'  => 'permit_empty|string',
         ])) {
-            return $this->response->setStatusCode(422)->setJSON(['errors' => $this->validator->getErrors()]);
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_UNPROCESSABLE_ENTITY)
+                ->setJSON(['errors' => $this->validator->getErrors()]);
         }
 
         try {

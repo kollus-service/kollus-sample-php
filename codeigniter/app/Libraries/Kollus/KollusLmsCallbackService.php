@@ -1,4 +1,8 @@
 <?php
+/**
+ * Kollus LMS 콜백(lms-callback) 페이로드를 요약하는 서비스.
+ * 시청 블록(b{n}) 플래그를 분석해 시청 블록 수와 구간 이동(스킵) 여부를 계산한다.
+ */
 
 namespace App\Libraries\Kollus;
 
@@ -22,7 +26,7 @@ class KollusLmsCallbackService
         $contentInfo = $payload['content_info'] ?? [];
         $blockInfo = $payload['block_info'] ?? [];
 
-        $blocks = $this->analyzeBlocks($blockInfo['blocks'] ?? []);
+        $blocks = $this->_analyzeBlocks($blockInfo['blocks'] ?? []);
 
         return [
             'tracking_key' => sprintf(
@@ -53,7 +57,7 @@ class KollusLmsCallbackService
      * @param array<string, string> $blocks
      * @return array{watchedCount: int, skipDetected: bool}
      */
-    private function analyzeBlocks(array $blocks): array
+    private function _analyzeBlocks(array $blocks): array
     {
         $watchedFlags = [];
 

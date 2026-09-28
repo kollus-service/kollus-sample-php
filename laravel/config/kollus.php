@@ -1,4 +1,8 @@
 <?php
+/**
+ * Kollus 연동 설정. 보안키/커스텀키/Access Token, 플레이어 URL, JWT 만료 시간, 다음 회차 MCK 목록,
+ * 멀티 DRM(inkaDRM/PallyCon) 계정 키를 .env 환경변수에서 읽는다.
+ */
 
 return [
 
@@ -48,7 +52,7 @@ return [
     | 다음 회차 연속 재생 기능 샘플용 미디어 콘텐츠 키 목록 (콤마로 구분).
     | 실제 서비스에서는 currentMck 기준으로 DB/API 조회로 대체할 것.
     */
-    'next_episode_mck' => env('KOLLUS_NEXT_EPISODE_MCK', ''),
+    'next_episode_mcks' => env('KOLLUS_NEXT_EPISODE_MCKS', ''), // 콤마 구분 목록 (예: mck1,mck2)
 
     /*
     |--------------------------------------------------------------------------

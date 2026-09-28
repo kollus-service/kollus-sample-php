@@ -1,8 +1,12 @@
 <?php
+/**
+ * Kollus 재생 콜백(play-callback) 컨트롤러 — kind1(만료 설정)/kind3(최종 승인) 요청을 검증하고 JWT 응답을 반환한다.
+ */
 
 namespace App\Controllers\Kollus;
 
 use App\Controllers\BaseController;
+use CodeIgniter\HTTP\ResponseInterface;
 use Config\Kollus as KollusConfig;
 use RuntimeException;
 
@@ -22,6 +26,8 @@ class PlayCallbackController extends BaseController
      *   - Content-Type : text/plain; charset=utf-8
      *   - X-KOLLUS-USERKEY : {CUSTOM_KEY}  (반드시 포함)
      *   - Body : JWT 인코딩된 JSON 응답
+     *
+     * @return ResponseInterface 성공 시 200 + JWT 본문, 검증 실패 422, JWT 생성 실패 500
      */
     public function handle()
     {
@@ -37,7 +43,9 @@ class PlayCallbackController extends BaseController
         ], [
             'kind' => ['in_list' => 'kind 값은 1(재생 만료 설정) 또는 3(최종 재생 승인)이어야 합니다.'],
         ])) {
-            return $this->response->setStatusCode(422)->setJSON(['errors' => $this->validator->getErrors()]);
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_UNPROCESSABLE_ENTITY)
+                ->setJSON(['errors' => $this->validator->getErrors()]);
         }
 
         $kind = (int) $this->request->getVar('kind');
@@ -53,12 +61,13 @@ class PlayCallbackController extends BaseController
             );
         } catch (RuntimeException $e) {
             // JWT 생성 실패는 서버 설정 오류이므로 500 반환
-            return $this->response->setStatusCode(500)
+            return $this->response
+                ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR)
                 ->setBody('Kollus 콜백 응답 생성에 실패했습니다: ' . $e->getMessage());
         }
 
         return $this->response
-            ->setStatusCode(200)
+            ->setStatusCode(ResponseInterface::HTTP_OK)
             ->setContentType('text/plain', 'utf-8')
             ->setHeader('X-KOLLUS-USERKEY', config(KollusConfig::class)->customKey)
             ->setBody($jwt);

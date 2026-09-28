@@ -8,13 +8,13 @@ Kollus 동영상 서비스(플레이어 재생, 멀티 DRM, 콘텐츠 업로드,
 |----------|------|
 | [`laravel/`](laravel/) | Laravel 프레임워크 기반 Kollus 연동 샘플. 플레이어/멀티 DRM 재생, 콘텐츠 업로드, 재생·DRM·다음회차·LMS 콜백 처리를 포함합니다. 자세한 내용은 [laravel/README.md](laravel/README.md) 참고. |
 | [`codeigniter/`](codeigniter/) | CodeIgniter 4 프레임워크 기반 Kollus 연동 샘플. Laravel 샘플과 동일한 기능을 CodeIgniter 구조로 구현했습니다. 자세한 내용은 [codeigniter/README.md](codeigniter/README.md) 참고. |
-| [`archive-legacy/`](archive-legacy/) | 과거 Kollus PHP 샘플 저장소를 백업용으로 모아둔 레거시 코드입니다. 더 이상 유지보수되지 않으며, 참고용으로만 남겨두었습니다. |
+| [`archive-legacy/`](archive-legacy/) | 과거 Kollus PHP 샘플 저장소를 백업용으로 모아둔 레거시 코드입니다. 더 이상 유지보수되지 않으며, 참고용으로만 남겨두었습니다. 표준화 가이드 규칙 적용 대상이 아닙니다(보관용). |
 
 ## 어떤 샘플을 봐야 하나요?
 
 - 현재 사용 중인 프레임워크가 **Laravel**이라면 `laravel/` 디렉토리를 참고하세요.
 - 현재 사용 중인 프레임워크가 **CodeIgniter**라면 `codeigniter/` 디렉토리를 참고하세요.
-- `archive-legacy/`는 신규 개발에는 사용하지 마세요. 과거 샘플(`kollus-samples-php`, `kollus-play-video-php`, `kollus-custom-upload-php`, `Kollus-MultiDrm-sample-php`)을 보관하기 위한 용도입니다.
+- `archive-legacy/`는 신규 개발에는 사용하지 마세요. 과거 샘플(`kollus-samples-php`, `kollus-play-video-php`, `kollus-custom-upload-php`, `Kollus-MultiDrm-sample-php`)을 보관하기 위한 용도이며, 표준화 가이드 규칙 적용 대상이 아닙니다(보관용).
 
 ## 공통 사전 요구사항
 

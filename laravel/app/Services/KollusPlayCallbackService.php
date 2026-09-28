@@ -1,4 +1,7 @@
 <?php
+/**
+ * Kollus 재생 콜백(kind 1/3)에 대한 허용/차단 응답을 조립하고 JWT로 인코딩하는 서비스.
+ */
 
 namespace App\Services;
 
@@ -15,9 +18,16 @@ class KollusPlayCallbackService
     /** 재생 만료 기본 오프셋 (초) */
     private const DEFAULT_EXPIRY_OFFSET_SECONDS = 600;
 
-    public function __construct(
-        private readonly KollusJwtService $jwtService,
-    ) {}
+    /** 콜백 응답 JWT 인코딩에 사용하는 JWT 서비스 */
+    private readonly KollusJwtService $_jwtService;
+
+    /**
+     * @param KollusJwtService $jwtService 콜백 응답 JWT 인코딩용 서비스 (일반 재생 계정 키 사용)
+     */
+    public function __construct(KollusJwtService $jwtService)
+    {
+        $this->_jwtService = $jwtService;
+    }
 
     /**
      * 콜백 kind에 맞는 JWT 응답 문자열을 반환한다.
@@ -27,24 +37,29 @@ class KollusPlayCallbackService
      * @param string|null $denyMessage 차단 시 플레이어에 노출할 메시지
      * @return string                  JWT 인코딩된 응답
      *
-     * @throws RuntimeException JWT 인코딩 실패 시
+     * @throws RuntimeException          JWT 인코딩 실패 시
+     * @throws \InvalidArgumentException 지원하지 않는 kind 값인 경우
      */
     public function buildResponse(int $kind, bool $isAllowed, ?string $denyMessage = null): string
     {
         $payload = match ($kind) {
-            self::KIND_PLAY_EXPIRY    => $this->buildKind1Payload($isAllowed, $denyMessage),
-            self::KIND_FINAL_APPROVAL => $this->buildKind3Payload($isAllowed, $denyMessage),
+            self::KIND_PLAY_EXPIRY    => $this->_buildKind1Payload($isAllowed, $denyMessage),
+            self::KIND_FINAL_APPROVAL => $this->_buildKind3Payload($isAllowed, $denyMessage),
             default => throw new \InvalidArgumentException("지원하지 않는 kind 값입니다: {$kind}"),
         };
 
-        return $this->jwtService->encodeJwt($payload);
+        return $this->_jwtService->encodeJwt($payload);
     }
 
     /**
      * kind1: 재생 만료 일시 및 보안 옵션.
      * expiration_date는 Kollus 시스템에 기록된 후 수정 불가이므로 정확한 값을 전달해야 함.
+     *
+     * @param bool        $isAllowed   재생 허용 여부
+     * @param string|null $denyMessage 차단 시 노출 메시지
+     * @return array{data: array<string, mixed>}
      */
-    private function buildKind1Payload(bool $isAllowed, ?string $denyMessage): array
+    private function _buildKind1Payload(bool $isAllowed, ?string $denyMessage): array
     {
         $data = [
             'result'          => (int) $isAllowed,
@@ -62,8 +77,12 @@ class KollusPlayCallbackService
 
     /**
      * kind3: 재생 직전 최종 권한 확인.
+     *
+     * @param bool        $isAllowed   재생 허용 여부
+     * @param string|null $denyMessage 차단 시 노출 메시지
+     * @return array{data: array<string, mixed>}
      */
-    private function buildKind3Payload(bool $isAllowed, ?string $denyMessage): array
+    private function _buildKind3Payload(bool $isAllowed, ?string $denyMessage): array
     {
         $data = [
             'result' => (int) $isAllowed,

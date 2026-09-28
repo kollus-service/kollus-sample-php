@@ -162,7 +162,7 @@ class Services extends BaseService
 
         return new KollusNextEpisodeCallbackService(
             static::kollusJwtService(),
-            $config->nextEpisodeMck,
+            $config->nextEpisodeMcks,
         );
     }
 

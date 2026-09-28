@@ -1,4 +1,7 @@
 <?php
+/**
+ * GET /kollus/player, /kollus/player/multi-drm — JWT 서명된 플레이어 URL을 생성해 iframe 뷰(kollus.player)를 렌더링하는 컨트롤러.
+ */
 
 namespace App\Http\Controllers;
 
@@ -7,19 +10,37 @@ use App\Services\KollusMultiDrmService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Response;
 
 class KollusPlayerController extends Controller
 {
-    public function __construct(
-        private readonly KollusJwtService $jwtService,
-        private readonly KollusMultiDrmService $multiDrmService,
-    ) {}
+    /** 일반 재생용 JWT 생성 및 플레이어 URL 조립 서비스 */
+    private readonly KollusJwtService $_jwtService;
+
+    /** 멀티 DRM(inkaDRM/Pallycon) 재생용 플레이어 URL 조립 서비스 */
+    private readonly KollusMultiDrmService $_multiDrmService;
+
+    /**
+     * @param KollusJwtService      $jwtService      일반 재생용 JWT 생성 및 플레이어 URL 조립 서비스
+     * @param KollusMultiDrmService $multiDrmService 멀티 DRM(inkaDRM/Pallycon) 재생용 플레이어 URL 조립 서비스
+     */
+    public function __construct(KollusJwtService $jwtService, KollusMultiDrmService $multiDrmService)
+    {
+        $this->_jwtService      = $jwtService;
+        $this->_multiDrmService = $multiDrmService;
+    }
 
     /**
      * Kollus 플레이어 페이지를 렌더링한다.
      *
      * 쿼리 파라미터:
      *   - media_content_key (필수): 재생할 미디어 콘텐츠 키
+     *
+     * @param Request $request media_content_key 쿼리 파라미터를 담은 요청
+     * @return View JWT 서명된 플레이어 URL을 iframe src로 넣은 kollus.player 뷰
+     *
+     * @throws \Illuminate\Validation\ValidationException media_content_key 누락 시
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException JWT 생성 실패 시 500 (abort)
      */
     public function show(Request $request): View
     {
@@ -31,13 +52,13 @@ class KollusPlayerController extends Controller
         $clientUserId = 'guest';
 
         try {
-            $playerUrl = $this->jwtService->buildPlayerUrl(
+            $playerUrl = $this->_jwtService->buildPlayerUrl(
                 clientUserId: $clientUserId,
                 mediaContentKeys: [$validated['media_content_key']],
             );
         } catch (RuntimeException $e) {
             // JWT 생성 실패는 서버 설정 문제이므로 500 응답
-            abort(500, 'Kollus 플레이어 URL 생성에 실패했습니다: ' . $e->getMessage());
+            abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Kollus 플레이어 URL 생성에 실패했습니다: ' . $e->getMessage());
         }
 
         return view('kollus.player', [
@@ -51,6 +72,12 @@ class KollusPlayerController extends Controller
      * 쿼리 파라미터:
      *   - media_content_key (필수): 재생할 미디어 콘텐츠 키
      *   - content_id (필수): 멀티 DRM 콘텐츠 ID (Kollus 업로드 파일 키)
+     *
+     * @param Request $request media_content_key / content_id 쿼리 파라미터를 담은 요청 (User-Agent로 DRM 종류 판별)
+     * @return View 멀티 DRM 정책이 포함된 플레이어 URL을 iframe src로 넣은 kollus.player 뷰
+     *
+     * @throws \Illuminate\Validation\ValidationException media_content_key / content_id 누락 시
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException JWT 생성·라이선스 룰 암호화 실패 시 500 (abort)
      */
     public function showMultiDrm(Request $request): View
     {
@@ -63,7 +90,7 @@ class KollusPlayerController extends Controller
         $clientUserId = 'guest';
 
         try {
-            $playerUrl = $this->multiDrmService->buildPlayerUrl(
+            $playerUrl = $this->_multiDrmService->buildPlayerUrl(
                 clientUserId: $clientUserId,
                 mediaContentKey: $validated['media_content_key'],
                 contentId: $validated['content_id'],
@@ -71,7 +98,7 @@ class KollusPlayerController extends Controller
             );
         } catch (RuntimeException $e) {
             // JWT/암호화 실패는 서버 설정 문제이므로 500 응답
-            abort(500, 'Kollus 멀티 DRM 플레이어 URL 생성에 실패했습니다: ' . $e->getMessage());
+            abort(Response::HTTP_INTERNAL_SERVER_ERROR, 'Kollus 멀티 DRM 플레이어 URL 생성에 실패했습니다: ' . $e->getMessage());
         }
 
         return view('kollus.player', [

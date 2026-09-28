@@ -1,4 +1,7 @@
 <?php
+/**
+ * Kollus 연동 설정 — .env의 KOLLUS_* 환경변수를 읽어 설정 객체로 노출한다 (Services.php에서 서비스 조립 시 참조).
+ */
 
 namespace Config;
 
@@ -11,7 +14,8 @@ class Kollus extends BaseConfig
     public string $accessToken = '';
     public string $playerUrl = 'https://v.kr.kollus.com/';
     public int $tokenExpireSeconds = 300;
-    public string $nextEpisodeMck = '';
+    /** 다음 회차 연속 재생 샘플 미디어 콘텐츠 키 — 콤마 구분 목록 (KOLLUS_NEXT_EPISODE_MCKS) */
+    public string $nextEpisodeMcks = '';
 
     public string $multiDrmSecurityKey = '';
     public string $multiDrmCustomKey = '';
@@ -32,7 +36,7 @@ class Kollus extends BaseConfig
         $this->accessToken = (string) env('KOLLUS_ACCESS_TOKEN', $this->accessToken);
         $this->playerUrl = (string) env('KOLLUS_PLAYER_URL', $this->playerUrl);
         $this->tokenExpireSeconds = (int) env('KOLLUS_TOKEN_EXPIRE_SECONDS', $this->tokenExpireSeconds);
-        $this->nextEpisodeMck = (string) env('KOLLUS_NEXT_EPISODE_MCK', $this->nextEpisodeMck);
+        $this->nextEpisodeMcks = (string) env('KOLLUS_NEXT_EPISODE_MCKS', $this->nextEpisodeMcks);
 
         $this->multiDrmSecurityKey = (string) env('KOLLUS_MULTIDRM_SECURITY_KEY', $this->multiDrmSecurityKey);
         $this->multiDrmCustomKey = (string) env('KOLLUS_MULTIDRM_CUSTOM_KEY', $this->multiDrmCustomKey);

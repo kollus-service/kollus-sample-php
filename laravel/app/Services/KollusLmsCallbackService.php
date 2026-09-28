@@ -1,4 +1,7 @@
 <?php
+/**
+ * Kollus LMS 콜백 payload(json_data)를 파싱해 시청 진도·구간 스킵 여부 등 로그용 요약 정보를 만드는 서비스.
+ */
 
 namespace App\Services;
 
@@ -22,7 +25,7 @@ class KollusLmsCallbackService
         $contentInfo = $payload['content_info'] ?? [];
         $blockInfo = $payload['block_info'] ?? [];
 
-        $blocks = $this->analyzeBlocks($blockInfo['blocks'] ?? []);
+        $blocks = $this->_analyzeBlocks($blockInfo['blocks'] ?? []);
 
         return [
             'tracking_key' => sprintf(
@@ -53,7 +56,7 @@ class KollusLmsCallbackService
      * @param array<string, string> $blocks
      * @return array{watchedCount: int, skipDetected: bool}
      */
-    private function analyzeBlocks(array $blocks): array
+    private function _analyzeBlocks(array $blocks): array
     {
         $watchedFlags = [];
 

@@ -1,4 +1,7 @@
 <?php
+/**
+ * POST /kollus/lms-callback — Kollus LMS 콜백(시청 이력/학습 진도)을 수신해 로그로 기록하고 204를 반환하는 컨트롤러.
+ */
 
 namespace App\Http\Controllers;
 
@@ -10,15 +13,25 @@ use Throwable;
 
 class KollusLmsCallbackController extends Controller
 {
-    public function __construct(
-        private readonly KollusLmsCallbackService $callbackService,
-    ) {}
+    /** LMS 콜백 payload 요약(시청 진도/스킵 감지) 서비스 */
+    private readonly KollusLmsCallbackService $_callbackService;
+
+    /**
+     * @param KollusLmsCallbackService $callbackService LMS 콜백 payload 요약(시청 진도/스킵 감지) 서비스
+     */
+    public function __construct(KollusLmsCallbackService $callbackService)
+    {
+        $this->_callbackService = $callbackService;
+    }
 
     /**
      * Kollus LMS 콜백을 수신하여 시청 이력/학습 진도 데이터를 로그로 기록한다.
      *
      * 요청 바디는 $_POST['json_data']에 JSON 문자열로 전달됨 (Kollus 규격, user_info/content_info/block_info/uservalues 구조).
      * fire-and-forget: 파싱/로그 기록 성공 여부와 무관하게 즉시 204 응답.
+     *
+     * @param Request $request json_data(JSON 문자열) 필드를 담은 LMS 콜백 요청
+     * @return Response 204 No Content
      */
     public function handle(Request $request): Response
     {
@@ -29,7 +42,7 @@ class KollusLmsCallbackController extends Controller
                 flags: JSON_THROW_ON_ERROR,
             );
 
-            $summary = $this->callbackService->summarize($payload);
+            $summary = $this->_callbackService->summarize($payload);
 
             Log::channel('kollus_lms')->info('lms_callback', $summary);
         } catch (Throwable $e) {

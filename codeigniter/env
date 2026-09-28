@@ -79,8 +79,8 @@
 # KOLLUS_PLAYER_URL=https://v.kr.kollus.com/
 # JWT 만료 시간(초).
 # KOLLUS_TOKEN_EXPIRE_SECONDS=300
-# 다음 회차 연속 재생 샘플 MCK
-# KOLLUS_NEXT_EPISODE_MCK=
+# 다음 회차 연속 재생 샘플 미디어 콘텐츠 키 (콤마 구분 목록)
+# KOLLUS_NEXT_EPISODE_MCKS=
 # 멀티 DRM 재생 전용 Kollus 계정 키 (일반 KOLLUS_SECURITY_KEY/KOLLUS_CUSTOM_KEY와 별도 계정)
 # KOLLUS_MULTIDRM_SECURITY_KEY=
 # KOLLUS_MULTIDRM_CUSTOM_KEY=

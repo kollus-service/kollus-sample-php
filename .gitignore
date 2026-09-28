@@ -1,0 +1,11 @@
+.DS_Store
+.idea/
+.vscode/
+
+# 가이드 공통 항목
+.env
+config.yml
+target/
+node_modules/
+.gradle/
+vendor/
