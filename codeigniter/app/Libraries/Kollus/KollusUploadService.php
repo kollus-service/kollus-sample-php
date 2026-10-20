@@ -45,7 +45,7 @@ class KollusUploadService
      *
      * @param string      $title         콘텐츠 제목 (미지정 시 파일명 사용)
      * @param string|null $categoryKey   저장할 카테고리 키 (미지정 시 기본 카테고리)
-     * @param int         $expireTime    URL 유효 시간 (초, 최대 MAX_EXPIRE_TIME)
+     * @param int         $expireTime    URL 유효 시간 (초, MIN_EXPIRE_TIME~MAX_EXPIRE_TIME 범위로 보정)
      * @param int         $isAudioUpload 오디오 파일 여부 (0: 비디오, 1: 오디오)
      * @param int         $isPassthrough 패스스루 업로드 여부 (0: 일반, 1: 패스스루)
      * @param string|null $profileKey    인코딩 프로파일 키 (패스스루 시 필수)
@@ -61,8 +61,8 @@ class KollusUploadService
         int $isPassthrough = 0,
         ?string $profileKey = null,
     ): array {
-        // 0 이하 값은 1초로, 상한 초과 값은 MAX_EXPIRE_TIME으로 보정 (API 오류 방지)
-        $expireTime = min(max($expireTime, 1), self::MAX_EXPIRE_TIME);
+        // 컨트롤러 검증과 같은 MIN_EXPIRE_TIME~MAX_EXPIRE_TIME 범위로 보정 (서비스 직접 호출 시에도 범위 보장)
+        $expireTime = min(max($expireTime, self::MIN_EXPIRE_TIME), self::MAX_EXPIRE_TIME);
 
         $body = array_filter([
             'expire_time'          => $expireTime,

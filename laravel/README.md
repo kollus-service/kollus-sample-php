@@ -2,10 +2,10 @@
 
 ## 개요
 
-Kollus 동영상 플레이어를 Laravel 프레임워크로 통합한 샘플 프로젝트입니다. 플레이어 재생, 멀티 DRM(inkaDRM/Pallycon) 재생, 콘텐츠 업로드, 재생/DRM/다음회차/LMS 콜백 처리까지 Kollus 연동에 필요한 서버 사이드 로직을 포함합니다.
+Kollus 동영상 플레이어를 Laravel 프레임워크로 통합한 샘플 프로젝트입니다. 플레이어 재생, 멀티 DRM(DoveRunner) 재생, 콘텐츠 업로드, 재생/DRM/다음회차/LMS 콜백 처리까지 Kollus 연동에 필요한 서버 사이드 로직을 포함합니다.
 
 - **플레이어 재생** — `media_content_key`로 HS256 JWT를 발급하고 플레이어 iframe을 렌더링
-- **멀티 DRM 재생** — User-Agent별 DRM 종류(Widevine/PlayReady/FairPlay)를 판별하고 inkaDRM 라이선스 룰을 암호화해 `drm_policy`를 조립
+- **멀티 DRM 재생** — User-Agent별 DRM 종류(Widevine/PlayReady/FairPlay)를 판별하고 DoveRunner 라이선스 룰을 암호화해 `drm_policy`를 조립
 - **콘텐츠 업로드** — 서버가 Kollus Upload API로 일회용 업로드 URL을 발급하고, 브라우저가 파일을 직접 전송(진행률 표시)
 - **콜백 처리** — 재생·DRM·다음 회차·LMS 콜백을 수신해 Kollus 규격에 맞는 JWT/JSON 응답 반환
 
@@ -14,7 +14,11 @@ Kollus 동영상 플레이어를 Laravel 프레임워크로 통합한 샘플 프
 - PHP 8.3 이상 / Composer
 - Node.js (Vite 에셋 빌드용)
 - Kollus 서비스 계정 및 API Key ([Kollus 관리자 콘솔](https://c-kr.kollus.com/service-account/custom-key) 로그인 필요)
-- (선택) 멀티 DRM 재생을 사용하려면 별도의 멀티 DRM 전용 Kollus 계정 키와 Pallycon(inkaDRM) 계정 키
+- (선택) 멀티 DRM 재생을 사용하려면 별도의 멀티 DRM 전용 Kollus 계정 키와 DoveRunner 계정 키
+
+> **Windows에서 PHP를 새로 설치한 경우** — `php.ini`(위치는 `php --ini`로 확인)에서 아래 두 가지를 설정해야 합니다.
+> - 확장 활성화: `extension=fileinfo`, `extension=intl`, `extension=zip` 줄 앞의 `;`를 제거 (`composer install` 및 프레임워크 동작에 필요)
+> - CA 인증서 번들 지정: `curl.cainfo`와 `openssl.cafile`에 CA 번들 경로를 지정 (예: [curl.se/ca/cacert.pem](https://curl.se/ca/cacert.pem)을 받아 지정하거나 Git for Windows의 `C:/Program Files/Git/mingw64/etc/ssl/certs/ca-bundle.crt` 사용). 지정하지 않으면 Kollus API 호출 시 `cURL error 60: SSL certificate ...` 오류가 발생합니다.
 
 ## 환경 설정
 
@@ -32,6 +36,8 @@ cp .env.example .env
 php artisan key:generate
 ```
 
+> 이 샘플은 DB를 사용하지 않습니다. `.env.example`은 세션·캐시를 파일(`SESSION_DRIVER=file`, `CACHE_STORE=file`)로, 큐를 동기 실행(`QUEUE_CONNECTION=sync`)으로 설정해 두었으므로 DB 파일 생성이나 `php artisan migrate` 없이 실행됩니다.
+
 `.env` 파일에서 Kollus 관련 값을 입력합니다.
 
 | 키 | 설명 | 위치 |
@@ -44,12 +50,12 @@ php artisan key:generate
 | `KOLLUS_NEXT_EPISODE_MCKS` | 다음 회차 재생 샘플 미디어 콘텐츠 키 목록 (콤마 구분) | - |
 | `KOLLUS_MULTIDRM_SECURITY_KEY` | 멀티 DRM 전용 JWT 서명 키 (일반 재생과 다른 별도 계정) | 멀티 DRM 서비스 계정 > 보안키 |
 | `KOLLUS_MULTIDRM_CUSTOM_KEY` | 멀티 DRM 전용 플레이어 URL 커스텀 키 | 멀티 DRM 서비스 계정 > 커스텀키 |
-| `KOLLUS_INKA_ACCESS_KEY` | inkaDRM(Pallycon) Access Key | DoveRunner 콘솔 |
-| `KOLLUS_INKA_SITE_KEY` | inkaDRM(Pallycon) Site Key (라이선스 룰 암호화용) | DoveRunner 콘솔 |
-| `KOLLUS_INKA_SITE_ID` | inkaDRM(Pallycon) Site ID | DoveRunner 콘솔 |
-| `KOLLUS_INKA_IV` | 라이선스 룰 AES-256-CBC 암호화 IV | - |
-| `KOLLUS_INKA_LICENSE_URL` | DoveRunner 라이선스 서버 URL | - |
-| `KOLLUS_INKA_CERTIFICATE_URL` | DoveRunner FairPlay 인증서 서버 URL | - |
+| `KOLLUS_DOVERUNNER_ACCESS_KEY` | DoveRunner Access Key | DoveRunner 콘솔 |
+| `KOLLUS_DOVERUNNER_SITE_KEY` | DoveRunner Site Key (라이선스 룰 암호화용) | DoveRunner 콘솔 |
+| `KOLLUS_DOVERUNNER_SITE_ID` | DoveRunner Site ID | DoveRunner 콘솔 |
+| `KOLLUS_DOVERUNNER_IV` | 라이선스 룰 AES-256-CBC 암호화 IV | - |
+| `KOLLUS_DOVERUNNER_LICENSE_URL` | DoveRunner 라이선스 서버 URL | - |
+| `KOLLUS_DOVERUNNER_CERTIFICATE_URL` | DoveRunner FairPlay 인증서 서버 URL | - |
 
 ## 실행 방법
 
@@ -67,16 +73,16 @@ npm run dev
 브라우저에서 아래 URL에 접근합니다 (`미디어콘텐츠키` 부분을 실제 미디어 콘텐츠 키로 교체):
 
 ```
-http://localhost/kollus/player?media_content_key=미디어콘텐츠키
+http://localhost:8000/kollus/player?media_content_key=미디어콘텐츠키
 ```
 
 멀티 DRM 재생은 `content_id`(멀티 DRM 콘텐츠 ID, Kollus 업로드 파일 키)를 추가로 전달합니다:
 
 ```
-http://localhost/kollus/player/multi-drm?media_content_key=미디어콘텐츠키&content_id=멀티DRM콘텐츠ID
+http://localhost:8000/kollus/player/multi-drm?media_content_key=미디어콘텐츠키&content_id=멀티DRM콘텐츠ID
 ```
 
-플레이어가 정상적으로 로드되면 설정이 완료된 것입니다. 업로드 페이지는 `http://localhost/kollus/upload`에서 확인합니다.
+플레이어가 정상적으로 로드되면 설정이 완료된 것입니다. 업로드 페이지는 `http://localhost:8000/kollus/upload`에서 확인합니다.
 
 ## 주요 파일
 
@@ -93,7 +99,7 @@ http://localhost/kollus/player/multi-drm?media_content_key=미디어콘텐츠키
 | `app/Http/Requests/KollusNextEpisodeCallbackRequest.php` | 다음 회차 콜백 파라미터 검증 |
 | `app/Providers/AppServiceProvider.php` | Kollus 관련 서비스 싱글턴 바인딩 |
 | `app/Services/KollusJwtService.php` | JWT 생성 및 플레이어 URL 조립 |
-| `app/Services/KollusMultiDrmService.php` | 멀티 DRM(inkaDRM/Pallycon) 재생 URL 조립 |
+| `app/Services/KollusMultiDrmService.php` | 멀티 DRM(DoveRunner) 재생 URL 조립 |
 | `app/Services/KollusUploadService.php` | Kollus Upload API 연동 |
 | `app/Services/KollusPlayCallbackService.php` | 재생 콜백 응답(JWT) 조립 |
 | `app/Services/KollusDrmCallbackService.php` | DRM 콜백 응답(JWT) 조립 |
@@ -114,7 +120,7 @@ http://localhost/kollus/player/multi-drm?media_content_key=미디어콘텐츠키
   │     └── KollusJwtService → JWT + 플레이어 URL 반환 (iframe src)
   │
   ├── GET /kollus/player/multi-drm?media_content_key=...&content_id=...
-  │     └── KollusMultiDrmService → inkaDRM drm_policy 조립 → KollusJwtService(멀티 DRM 계정) → JWT + 플레이어 URL 반환
+  │     └── KollusMultiDrmService → DoveRunner drm_policy 조립 → KollusJwtService(멀티 DRM 계정) → JWT + 플레이어 URL 반환
   │
   ├── GET /kollus/upload
   │     ├── POST /kollus/upload/create-url → Kollus Upload API 프록시
@@ -138,7 +144,7 @@ http://localhost/kollus/player/multi-drm?media_content_key=미디어콘텐츠키
 `media_content_key`(재생할 미디어 콘텐츠 키)와 `content_id`(멀티 DRM 콘텐츠 ID, Kollus 업로드 파일 키) 쿼리 파라미터를 받아 Widevine/PlayReady/FairPlay 멀티 DRM 재생용 플레이어를 렌더링합니다. 뷰는 샘플 플레이어와 동일한 `kollus.player` 템플릿을 재사용합니다.
 
 - `KollusMultiDrmService`가 요청 User-Agent를 분석해 브라우저별 DRM 종류/스트리밍 방식을 자동 선택합니다 (Chrome·Firefox → Widevine/dash, Safari·CriOS → FairPlay/hls, 그 외 → PlayReady/dash).
-- inkaDRM(Pallycon) 라이선스 룰을 AES-256-CBC로 암호화하고 SHA-256 해시를 계산해 `custom_header`(`pallycon-customdata-v2`) 페이로드를 생성합니다.
+- DoveRunner 라이선스 룰을 AES-256-CBC로 암호화하고 SHA-256 해시를 계산해 `custom_header`(`pallycon-customdata-v2`) 페이로드를 생성합니다.
 - 일반 재생과 별도의 Kollus 계정을 사용하므로 JWT 서명/커스텀 키는 `KOLLUS_SECURITY_KEY`/`KOLLUS_CUSTOM_KEY`가 아닌 `KOLLUS_MULTIDRM_SECURITY_KEY`/`KOLLUS_MULTIDRM_CUSTOM_KEY`를 사용합니다.
 
 #### 콘텐츠 업로드 `GET /kollus/upload`

@@ -19,7 +19,7 @@ Kollus 동영상 서비스(플레이어 재생, 멀티 DRM, 콘텐츠 업로드,
 ## 공통 사전 요구사항
 
 - Kollus 서비스 계정 및 API Key ([Kollus 관리자 콘솔](https://c-kr.kollus.com/service-account/custom-key) 로그인 필요)
-- (선택) 멀티 DRM 재생을 사용하려면 별도의 멀티 DRM 전용 Kollus 계정 키와 Pallycon(inkaDRM) 계정 키
+- (선택) 멀티 DRM 재생을 사용하려면 별도의 멀티 DRM 전용 Kollus 계정 키와 DoveRunner 계정 키
 
 설치 및 실행 방법은 각 디렉토리의 README를 참고하세요.
 

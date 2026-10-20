@@ -20,12 +20,12 @@ class Kollus extends BaseConfig
     public string $multiDrmSecurityKey = '';
     public string $multiDrmCustomKey = '';
 
-    public string $inkaAccessKey = '';
-    public string $inkaSiteKey = '';
-    public string $inkaSiteId = '';
-    public string $inkaIv = '0123456789abcdef';
-    public string $inkaLicenseUrl = 'https://license.pallycon.com/ri/licenseManager.do';
-    public string $inkaCertificateUrl = 'https://license.pallycon.com/ri/fpsKeyManager.do';
+    public string $doverunnerAccessKey = '';
+    public string $doverunnerSiteKey = '';
+    public string $doverunnerSiteId = '';
+    public string $doverunnerIv = '0123456789abcdef';
+    public string $doverunnerLicenseUrl = 'https://drm-license.doverunner.com/ri/licenseManager.do';
+    public string $doverunnerCertificateUrl = 'https://drm-license.doverunner.com/ri/fpsKeyManager.do';
 
     public function __construct()
     {
@@ -41,11 +41,11 @@ class Kollus extends BaseConfig
         $this->multiDrmSecurityKey = (string) env('KOLLUS_MULTIDRM_SECURITY_KEY', $this->multiDrmSecurityKey);
         $this->multiDrmCustomKey = (string) env('KOLLUS_MULTIDRM_CUSTOM_KEY', $this->multiDrmCustomKey);
 
-        $this->inkaAccessKey = (string) env('KOLLUS_INKA_ACCESS_KEY', $this->inkaAccessKey);
-        $this->inkaSiteKey = (string) env('KOLLUS_INKA_SITE_KEY', $this->inkaSiteKey);
-        $this->inkaSiteId = (string) env('KOLLUS_INKA_SITE_ID', $this->inkaSiteId);
-        $this->inkaIv = (string) env('KOLLUS_INKA_IV', $this->inkaIv);
-        $this->inkaLicenseUrl = (string) env('KOLLUS_INKA_LICENSE_URL', $this->inkaLicenseUrl);
-        $this->inkaCertificateUrl = (string) env('KOLLUS_INKA_CERTIFICATE_URL', $this->inkaCertificateUrl);
+        $this->doverunnerAccessKey = (string) env('KOLLUS_DOVERUNNER_ACCESS_KEY', $this->doverunnerAccessKey);
+        $this->doverunnerSiteKey = (string) env('KOLLUS_DOVERUNNER_SITE_KEY', $this->doverunnerSiteKey);
+        $this->doverunnerSiteId = (string) env('KOLLUS_DOVERUNNER_SITE_ID', $this->doverunnerSiteId);
+        $this->doverunnerIv = (string) env('KOLLUS_DOVERUNNER_IV', $this->doverunnerIv);
+        $this->doverunnerLicenseUrl = (string) env('KOLLUS_DOVERUNNER_LICENSE_URL', $this->doverunnerLicenseUrl);
+        $this->doverunnerCertificateUrl = (string) env('KOLLUS_DOVERUNNER_CERTIFICATE_URL', $this->doverunnerCertificateUrl);
     }
 }

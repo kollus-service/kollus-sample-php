@@ -59,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // KollusMultiDrmService: 멀티 DRM 전용 Kollus 계정 키 + inkaDRM(Pallycon) config 값에 의존
+        // KollusMultiDrmService: 멀티 DRM 전용 Kollus 계정 키 + DoveRunner config 값에 의존
         $this->app->singleton(KollusMultiDrmService::class, function () {
             $multiDrmSecurityKey = config('kollus.multidrm.security_key');
             $multiDrmCustomKey   = config('kollus.multidrm.custom_key');
@@ -71,14 +71,14 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
-            $accessKey = config('kollus.inka.access_key');
-            $siteKey   = config('kollus.inka.site_key');
-            $siteId    = config('kollus.inka.site_id');
+            $accessKey = config('kollus.doverunner.access_key');
+            $siteKey   = config('kollus.doverunner.site_key');
+            $siteId    = config('kollus.doverunner.site_id');
 
-            // inkaDRM 키가 없으면 서비스 구동 불가 — 명확한 오류 메시지 제공
+            // DoveRunner 키가 없으면 서비스 구동 불가 — 명확한 오류 메시지 제공
             if (empty($accessKey) || empty($siteKey) || empty($siteId)) {
                 throw new InvalidArgumentException(
-                    'KOLLUS_INKA_ACCESS_KEY, KOLLUS_INKA_SITE_KEY, KOLLUS_INKA_SITE_ID 환경변수가 설정되지 않았습니다.'
+                    'KOLLUS_DOVERUNNER_ACCESS_KEY, KOLLUS_DOVERUNNER_SITE_KEY, KOLLUS_DOVERUNNER_SITE_ID 환경변수가 설정되지 않았습니다.'
                 );
             }
 
@@ -92,13 +92,13 @@ class AppServiceProvider extends ServiceProvider
             );
 
             return new KollusMultiDrmService(
-                jwtService:      $multiDrmJwtService,
-                inkaAccessKey:   $accessKey,
-                inkaSiteKey:     $siteKey,
-                inkaSiteId:      $siteId,
-                inkaIv:          config('kollus.inka.iv'),
-                licenseUrl:      config('kollus.inka.license_url'),
-                certificateUrl:  config('kollus.inka.certificate_url'),
+                jwtService:          $multiDrmJwtService,
+                doverunnerAccessKey: $accessKey,
+                doverunnerSiteKey:   $siteKey,
+                doverunnerSiteId:    $siteId,
+                doverunnerIv:        config('kollus.doverunner.iv'),
+                licenseUrl:          config('kollus.doverunner.license_url'),
+                certificateUrl:      config('kollus.doverunner.certificate_url'),
             );
         });
     }

@@ -21,7 +21,7 @@ $routes->get('kollus/player', 'Kollus\PlayerController::show', ['as' => 'kollus.
 |--------------------------------------------------------------------------
 | GET /kollus/player/multi-drm?media_content_key=...&content_id=...
 |
-| Widevine/PlayReady/FairPlay 등 멀티 DRM(inkaDRM/Pallycon) 재생용.
+| Widevine/PlayReady/FairPlay 등 멀티 DRM(DoveRunner) 재생용.
 */
 $routes->get('kollus/player/multi-drm', 'Kollus\PlayerController::showMultiDrm', ['as' => 'kollus.player.multi-drm']);
 

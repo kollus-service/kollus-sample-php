@@ -17,12 +17,12 @@ class KollusPlayerController extends Controller
     /** 일반 재생용 JWT 생성 및 플레이어 URL 조립 서비스 */
     private readonly KollusJwtService $_jwtService;
 
-    /** 멀티 DRM(inkaDRM/Pallycon) 재생용 플레이어 URL 조립 서비스 */
+    /** 멀티 DRM(DoveRunner) 재생용 플레이어 URL 조립 서비스 */
     private readonly KollusMultiDrmService $_multiDrmService;
 
     /**
      * @param KollusJwtService      $jwtService      일반 재생용 JWT 생성 및 플레이어 URL 조립 서비스
-     * @param KollusMultiDrmService $multiDrmService 멀티 DRM(inkaDRM/Pallycon) 재생용 플레이어 URL 조립 서비스
+     * @param KollusMultiDrmService $multiDrmService 멀티 DRM(DoveRunner) 재생용 플레이어 URL 조립 서비스
      */
     public function __construct(KollusJwtService $jwtService, KollusMultiDrmService $multiDrmService)
     {

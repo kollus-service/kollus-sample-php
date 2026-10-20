@@ -34,7 +34,7 @@ Route::get('/kollus/player', [KollusPlayerController::class, 'show'])
 |--------------------------------------------------------------------------
 | GET /kollus/player/multi-drm?media_content_key=...&content_id=...
 |
-| Widevine/PlayReady/FairPlay 등 멀티 DRM(inkaDRM/Pallycon) 재생용.
+| Widevine/PlayReady/FairPlay 등 멀티 DRM(DoveRunner) 재생용.
 | 실제 서비스에서는 auth 미들웨어를 추가해 인증된 사용자만 접근하도록 제한할 것.
 */
 Route::get('/kollus/player/multi-drm', [KollusPlayerController::class, 'showMultiDrm'])

@@ -1,7 +1,7 @@
 <?php
 /**
  * Kollus 연동 설정. 보안키/커스텀키/Access Token, 플레이어 URL, JWT 만료 시간, 다음 회차 MCK 목록,
- * 멀티 DRM(inkaDRM/PallyCon) 계정 키를 .env 환경변수에서 읽는다.
+ * 멀티 DRM(DoveRunner) 계정 키를 .env 환경변수에서 읽는다.
  */
 
 return [
@@ -58,7 +58,7 @@ return [
     |--------------------------------------------------------------------------
     | 멀티 DRM 전용 Kollus 계정 키
     |--------------------------------------------------------------------------
-    | 멀티 DRM(inkaDRM/Pallycon) 재생은 별도 Kollus 계정을 사용하므로
+    | 멀티 DRM(DoveRunner) 재생은 별도 Kollus 계정을 사용하므로
     | 위 security_key/custom_key 대신 이 값을 사용한다.
     */
     'multidrm' => [
@@ -68,17 +68,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | 멀티 DRM (inkaDRM / Pallycon) 설정
+    | 멀티 DRM (DoveRunner) 설정
     |--------------------------------------------------------------------------
-    | Pallycon 콘솔에서 발급받은 값을 입력하세요.
+    | DoveRunner 콘솔에서 발급받은 값을 입력하세요.
     */
-    'inka' => [
-        'access_key'      => env('KOLLUS_INKA_ACCESS_KEY'),
-        'site_key'        => env('KOLLUS_INKA_SITE_KEY'),
-        'site_id'         => env('KOLLUS_INKA_SITE_ID'),
-        'iv'              => env('KOLLUS_INKA_IV', '0123456789abcdef'),
-        'license_url'     => env('KOLLUS_INKA_LICENSE_URL', 'https://license.pallycon.com/ri/licenseManager.do'),
-        'certificate_url' => env('KOLLUS_INKA_CERTIFICATE_URL', 'https://license.pallycon.com/ri/fpsKeyManager.do'),
+    'doverunner' => [
+        'access_key'      => env('KOLLUS_DOVERUNNER_ACCESS_KEY'),
+        'site_key'        => env('KOLLUS_DOVERUNNER_SITE_KEY'),
+        'site_id'         => env('KOLLUS_DOVERUNNER_SITE_ID'),
+        'iv'              => env('KOLLUS_DOVERUNNER_IV', '0123456789abcdef'),
+        'license_url'     => env('KOLLUS_DOVERUNNER_LICENSE_URL', 'https://drm-license.doverunner.com/ri/licenseManager.do'),
+        'certificate_url' => env('KOLLUS_DOVERUNNER_CERTIFICATE_URL', 'https://drm-license.doverunner.com/ri/fpsKeyManager.do'),
     ],
 
 ];

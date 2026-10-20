@@ -81,7 +81,7 @@ class Services extends BaseService
     }
 
     /**
-     * 멀티 DRM(Widevine/PlayReady/FairPlay, inkaDRM/Pallycon) 재생용 서비스.
+     * 멀티 DRM(Widevine/PlayReady/FairPlay, DoveRunner) 재생용 서비스.
      */
     public static function kollusMultiDrmService(bool $getShared = true): KollusMultiDrmService
     {
@@ -91,20 +91,20 @@ class Services extends BaseService
 
         $config = config(Kollus::class);
 
-        if ($config->inkaAccessKey === '' || $config->inkaSiteKey === '' || $config->inkaSiteId === '') {
+        if ($config->doverunnerAccessKey === '' || $config->doverunnerSiteKey === '' || $config->doverunnerSiteId === '') {
             throw new InvalidArgumentException(
-                'KOLLUS_INKA_ACCESS_KEY, KOLLUS_INKA_SITE_KEY, KOLLUS_INKA_SITE_ID 환경변수가 설정되지 않았습니다.'
+                'KOLLUS_DOVERUNNER_ACCESS_KEY, KOLLUS_DOVERUNNER_SITE_KEY, KOLLUS_DOVERUNNER_SITE_ID 환경변수가 설정되지 않았습니다.'
             );
         }
 
         return new KollusMultiDrmService(
             static::kollusMultiDrmJwtService(),
-            $config->inkaAccessKey,
-            $config->inkaSiteKey,
-            $config->inkaSiteId,
-            $config->inkaIv,
-            $config->inkaLicenseUrl,
-            $config->inkaCertificateUrl,
+            $config->doverunnerAccessKey,
+            $config->doverunnerSiteKey,
+            $config->doverunnerSiteId,
+            $config->doverunnerIv,
+            $config->doverunnerLicenseUrl,
+            $config->doverunnerCertificateUrl,
         );
     }
 
