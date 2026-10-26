@@ -1,5 +1,7 @@
 # Kollus Laravel Player — 플레이어 재생·콘텐츠 업로드·콜백 처리 샘플
 
+> ⚠ **보안 안내**: PHP 보안 취약점으로 **8.3.36 / 8.4.27 / 8.5.12 이상**으로 업데이트하세요.
+
 ## 개요
 
 Kollus 동영상 플레이어를 Laravel 프레임워크로 통합한 샘플 프로젝트입니다. 플레이어 재생, 멀티 DRM(DoveRunner) 재생, 콘텐츠 업로드, 재생/DRM/다음회차/LMS 콜백 처리까지 Kollus 연동에 필요한 서버 사이드 로직을 포함합니다.
@@ -11,7 +13,7 @@ Kollus 동영상 플레이어를 Laravel 프레임워크로 통합한 샘플 프
 
 ## 사전 요구사항
 
-- PHP 8.3 이상 / Composer
+- PHP 8.3.36 이상 (8.4는 8.4.27, 8.5는 8.5.12 이상 — PHP2Shell 보안 패치 적용 버전) / Composer
 - Node.js (Vite 에셋 빌드용)
 - Kollus 서비스 계정 및 API Key ([Kollus 관리자 콘솔](https://c-kr.kollus.com/service-account/custom-key) 로그인 필요)
 - (선택) 멀티 DRM 재생을 사용하려면 별도의 멀티 DRM 전용 Kollus 계정 키와 DoveRunner 계정 키
